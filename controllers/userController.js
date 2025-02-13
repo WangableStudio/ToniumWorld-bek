@@ -1,6 +1,7 @@
 const ApiError = require("../error/ApiError");
 const { User, Spaceports, Ship } = require("../models/models");
 const jwt = require('jsonwebtoken');
+const uuid = require('uuid');
 
 const generateJwt = (id, name, address, role = null) => {
     const payload = { id, name, address };
@@ -30,7 +31,7 @@ class UserController {
                     }
                 ],
                 defaults: {
-                    id,
+                    id: uuid.v4().replace(/-/g, ''),
                     name,
                     role: role || null
                 }

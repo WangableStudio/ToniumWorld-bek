@@ -102,7 +102,7 @@ class ElementController {
                         },
                         {
                             model: Alliance,
-                            required:false,
+                            required: false,
                             where: { userId }
                         }
                     ],
@@ -160,6 +160,25 @@ class ElementController {
         } catch (err) {
             console.log(err);
             next(ApiError.internal('Ошибка при получении элементов.'));
+        }
+    }
+
+    async getFixed(req, res, next) {
+        try {
+            const elements = await Element.findAll({
+                include: [
+                    {
+                        model: Planeta,
+                    },
+                ],
+                order: [
+                    ['createdAt', 'ASC']
+                ]
+            })
+
+            return res.json(elements)
+        } catch (err) {
+            next(ApiError.internal('Ошибка при получении фиксированных элементов.'));
         }
     }
 

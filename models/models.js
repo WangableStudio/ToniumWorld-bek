@@ -3,7 +3,7 @@ const { DataTypes } = require('sequelize')
 
 const User = sequelize.define('user', {
     id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.STRING,
         primaryKey: true,
         allowNull: false
     },
@@ -123,7 +123,7 @@ const UserResource = sequelize.define('user_resource', {
         allowNull: false
     },
     userId: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.STRING,
         references: {
             model: User,
             key: 'id'
@@ -170,7 +170,7 @@ const ElementLevelAndSpeed = sequelize.define('element_level_and_speed', {
         allowNull: false
     },
     userId: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.STRING,
         references: {
             model: User,
             key: 'id'
@@ -186,7 +186,7 @@ const Spaceports = sequelize.define('spaceports', {
         allowNull: false
     },
     userId: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.STRING,
         references: {
             model: User,
             key: 'id'
@@ -256,7 +256,7 @@ const Alliance = sequelize.define('alliance', {
         allowNull: false
     },
     userId: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.STRING,
         references: {
             model: User,
             key: 'id'
@@ -296,7 +296,7 @@ const UserTasks = sequelize.define('user_tasks', {
         allowNull: false
     },
     userId: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.STRING,
         references: {
             model: User,
             key: 'id'
