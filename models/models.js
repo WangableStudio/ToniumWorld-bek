@@ -240,7 +240,7 @@ const Alliance = sequelize.define('alliance', {
     },
     name: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     members: {
         type: DataTypes.ARRAY(DataTypes.BIGINT),
