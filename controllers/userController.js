@@ -14,12 +14,13 @@ const generateJwt = (id, name, address, role = null) => {
 class UserController {
     async create(req, res, next) {
         try {
-            const { id, name, address, role, secretKey } = req.body;
+            const { tg_id, name, address, role, secretKey } = req.body;
 
             if (role && secretKey !== process.env.SECRET_KEY) {
                 return next(ApiError.badRequest('Доступ запрещен.'));
             }
 
+            // Поиск или создание пользователя
             const [user, created] = await User.findOrCreate({
                 where: { address },
                 include: [
@@ -32,10 +33,18 @@ class UserController {
                 ],
                 defaults: {
                     id: uuid.v4().replace(/-/g, ''),
-                    name,
+                    name: name || null,
+                    tg_id: tg_id || null,
                     role: role || null
                 }
             });
+
+            if (!created && (name || tg_id)) {
+                if (name) user.name = name;
+                if (tg_id) user.tg_id = tg_id;
+
+                await user.save();
+            }
 
             const token = generateJwt(user.id, user.name, user.address, user.role);
 
@@ -49,6 +58,7 @@ class UserController {
             next(ApiError.badRequest('Произошла ошибка при получении пользователей.'));
         }
     }
+
 
     async auth(req, res, next) {
         try {
