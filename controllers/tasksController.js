@@ -1,3 +1,4 @@
+const { where } = require("sequelize");
 const { model } = require("../db");
 const ApiError = require("../error/ApiError");
 const { Tasks, UserTasks, User } = require("../models/models");
@@ -22,11 +23,14 @@ class TasksController {
     }
 
     async getAll(req, res, next) {
+        const userId = req.user.id
         try {
             const tasks = await Tasks.findAll({
                 include: [
                     {
                         model: UserTasks,
+                        where: { userId },
+                        required: false
                     }
                 ]
             });
@@ -36,20 +40,20 @@ class TasksController {
             next(ApiError.internal('Ошибка при получении всех задач.'));
         }
     }
-    
+
     async completed(req, res, next) {
         try {
             const { taskId, completed } = req.body;
             const userId = req.user.id;
-            
+
             const task = await Tasks.findOne({
                 where: { id: taskId }
             });
-            
+
             if (!task) {
                 return next(ApiError.notFound('Задача не найдена.'));
             }
-            
+
             const [userTask, created] = await UserTasks.findOrCreate({
                 where: { userId, taskId },
                 defaults: {
@@ -57,11 +61,11 @@ class TasksController {
                     completed
                 }
             });
-            
+
             if (!created && userTask.completed) {
                 return res.json({ message: 'Вы уже выполнили это задание.' });
             }
-            
+
             if (!userTask.completed) {
                 userTask.completed = true;
                 await userTask.save();
@@ -69,12 +73,12 @@ class TasksController {
             }
 
             const user = await User.findByPk(userId)
-            
-            user.coins = parseFloat((user.coins + task.resource).toFixed(5))
+
+            user.coins = parseFloat((parseFloat(user.coins) + parseFloat(task.resource)).toFixed(5));
             await user.save()
-            
+
             res.json(userTask);
-            
+
         } catch (err) {
             console.log(err);
             next(ApiError.internal('Ошибка при изменении статуса завершенности задачи.'));

@@ -1,6 +1,7 @@
 const ApiError = require("../error/ApiError");
 const { UserResource, Planeta, Element, User, Ship, Spaceports } = require("../models/models");
 const uuid = require('uuid')
+const { bot } = require('../bot'); // Импортируем бота
 
 class UserResourceController {
     async create(req, res, next) {
@@ -265,6 +266,16 @@ class UserResourceController {
                 return next(ApiError.badRequest('Ресурс не найден'));
             }
 
+            const planetOwner = await User.findByPk(userResource.userId);
+            if (!planetOwner || !planetOwner.tg_id) {
+                return next(ApiError.badRequest('Владелец планеты не найден или у него нет Telegram ID'));
+            }
+
+            const attackerUser = await User.findByPk(userId);
+            if (!attackerUser) {
+                return next(ApiError.badRequest('Атакующий пользователь не найден'));
+            }
+
             let planetHP = userResource.amount + 1000;
             let totalTonnage = 0;
 
@@ -280,23 +291,22 @@ class UserResourceController {
 
                 let maxDamage = power * shot;
 
-                if (planetHP <= 0) break; // Если планета уже уничтожена, не атакуем
+                if (planetHP <= 0) break;
 
                 if (maxDamage >= planetHP) {
-                    // Если урон корабля больше оставшегося HP планеты, используем только нужное количество патронов
                     let usedShots = Math.ceil(planetHP / power);
-                    let remainingShots = shot - usedShots; // Остаток патронов
+                    let remainingShots = shot - usedShots;
 
-                    planetHP = 0; // Планета уничтожена
+                    planetHP = 0;
 
                     const updatedAttributes = spaceship.attributes.map(attr =>
                         attr.trait_type === "Shot" ? { ...attr, value: remainingShots } : attr
                     );
+                    totalTonnage += Number(tonnage);
                     spaceship.attributes = updatedAttributes;
                     await spaceship.save();
-                    break; // Атака завершена, остальные корабли не стреляют
+                    break;
                 } else {
-                    // Если урона не хватило для уничтожения планеты, корабль тратит все патроны
                     planetHP -= maxDamage;
                     totalTonnage += Number(tonnage);
 
@@ -308,8 +318,9 @@ class UserResourceController {
                 }
             }
 
+            let message;
+            let resultMessage;
             if (planetHP <= 0) {
-                // Собираем ровно столько ресурсов, сколько помещается в общий `Tonnage`
                 const resourcesToCollect = Math.min(totalTonnage, userResource.amount);
 
                 const userCollectedResource = await UserResource.findOne({
@@ -321,21 +332,23 @@ class UserResourceController {
                     await userCollectedResource.save();
                 }
 
-                // Уменьшаем ресурсы на планете
                 userResource.amount -= resourcesToCollect;
                 await userResource.save();
 
-                return res.json({
-                    message: `Победа! Вы собрали ${resourcesToCollect} ресурсов.`,
-                    collected: resourcesToCollect,
-                    remainingHP: 0
-                });
+                message = `Победа! Вы собрали ${resourcesToCollect} ресурсов.`;
+                resultMessage = `🚨 На вашу планету напал ${attackerUser.name} и украл ${resourcesToCollect} ресурсов!`;
             } else {
-                return res.json({
-                    message: "Поражение! Не хватило силы для уничтожения планеты.",
-                    remainingHP: planetHP
-                });
+                message = "Поражение! Не хватило силы для уничтожения планеты.";
+                resultMessage = `🛡️ На вашу планету напал ${attackerUser.name}, но вы успешно защитились!`;
             }
+
+            // Отправка уведомления владельцу планеты через Telegram бота
+            await bot.sendMessage(planetOwner.tg_id, resultMessage, { parse_mode: 'HTML' });
+
+            return res.json({
+                message,
+                remainingHP: planetHP <= 0 ? 0 : planetHP
+            });
         } catch (error) {
             next(ApiError.internal(error.message));
         }

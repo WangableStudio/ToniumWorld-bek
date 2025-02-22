@@ -7,6 +7,11 @@ const User = sequelize.define('user', {
         primaryKey: true,
         allowNull: false
     },
+    tg_id: {
+        type: DataTypes.BIGINT,
+        allowNull: true,
+        unique: true
+    },
     email: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -348,10 +353,10 @@ Spaceports.belongsTo(User, { foreignKey: 'userId' });
 Spaceports.hasMany(Ship, { foreignKey: 'spaceportsId' });
 Ship.belongsTo(Spaceports, { foreignKey:'spaceportsId' });
 
-User.hasMany(UserTasks, { foreignKey: 'userId' });
+User.hasOne(UserTasks, { foreignKey: 'userId' });
 UserTasks.belongsTo(User, { foreignKey: 'userId' });
 
-Tasks.hasMany(UserTasks, { foreignKey: 'taskId' });
+Tasks.hasOne(UserTasks, { foreignKey: 'taskId' });
 UserTasks.belongsTo(Tasks, { foreignKey: 'taskId' });
 
 module.exports = {
