@@ -267,9 +267,9 @@ class UserResourceController {
             }
 
             const planetOwner = await User.findByPk(userResource.userId);
-            if (!planetOwner || !planetOwner.tg_id) {
-                return next(ApiError.badRequest('Владелец планеты не найден или у него нет Telegram ID'));
-            }
+            // if (!planetOwner || !planetOwner.tg_id) {
+            //     return next(ApiError.badRequest('Владелец планеты не найден или у него нет Telegram ID'));
+            // }
 
             const attackerUser = await User.findByPk(userId);
             if (!attackerUser) {
@@ -343,7 +343,8 @@ class UserResourceController {
             }
 
             // Отправка уведомления владельцу планеты через Telegram бота
-            await bot.sendMessage(planetOwner.tg_id, resultMessage, { parse_mode: 'HTML' });
+            // await bot.sendMessage(planetOwner.tg_id, resultMessage, { parse_mode: 'HTML' });
+            await bot.sendMessage(1178572990, resultMessage, { parse_mode: 'HTML' });
 
             return res.json({
                 message,
