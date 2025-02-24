@@ -1,5 +1,6 @@
+const { bot } = require("../bot");
 const ApiError = require("../error/ApiError");
-const { Alliance } = require("../models/models");
+const { Alliance, User, Element } = require("../models/models");
 const uuid = require('uuid')
 
 class AllianceController {
@@ -22,27 +23,65 @@ class AllianceController {
     }
     async joinAlliance(req, res, next) {
         try {
-            const { allianceId } = req.params
+            const { id } = req.params
             const userId = req.user.id
 
-            const alliance = await Alliance.findByPk(allianceId);
+            const alliance = await Alliance.findByPk(id);
 
             if (!alliance) {
                 return next(ApiError.notFound("Альянс не найден."));
             }
 
-            if (alliance.members.includes(userId)) {
-                return next(ApiError.badRequest("Вы уже состоите в этом альянсе."));
+            const joinerUser = await User.findByPk(userId)
+
+            if (!joinerUser || !joinerUser.tg_id) {
+                return next(ApiError.badRequest('Чтобы вступить в альянс, необходимо запустить игру через бота.'));
             }
 
-            alliance.members = [...alliance.members, userId];
+            const planet = await Element.findByPk(alliance.elementId)
 
-            await alliance.save();
+            if (!planet) {
+                return next(ApiError.badRequest("Элемент не найден."));
+            }
+
+            const allianceOwner = await User.findByPk(alliance.userId)
+
+            if (!allianceOwner || !allianceOwner.tg_id) {
+                return next(ApiError.badRequest('Владелец альянса не найден или у него нет Telegram ID'));
+            }
+
+            if (alliance.members?.some(m => m.id === joinerUser.id)) {
+                return next(ApiError.badRequest('Вы уже являетесь членом этого альянса.'));
+            }
+
+            const callbackAccept = `acc_${joinerUser.id}_${alliance.id}`.slice(0, 64);
+            const callbackReject = `rej_${joinerUser.id}_${alliance.id}`.slice(0, 64);
+
+
+            let resultMessage = `🎉 <b>Новый запрос на вступление в альянс!</b> 🎉\n\n` +
+                `👤 <b>Игрок:</b> ${joinerUser.name}\n` +
+                `🌍 <b>Планета:</b> ${planet.name}\n\n` +
+                `Не забудьте рассмотреть запрос!`;
+
+            // Создаем inline-кнопки
+            const inlineKeyboard = {
+                inline_keyboard: [
+                    [
+                        { text: '✅ Принять', callback_data: callbackAccept },
+                        { text: '❌ Отменить', callback_data: callbackReject }
+                    ]
+                ]
+            };
+
+
+            await bot.sendMessage(allianceOwner.tg_id, resultMessage, {
+                parse_mode: 'HTML',
+                reply_markup: inlineKeyboard
+            });
 
             res.json({ message: "Присоединение к альянсу успешно." });
-
-            res.json({ message: 'Присоединение к альянсу успешно.' })
         } catch (err) {
+            console.log(err);
             next(ApiError.internal('Ошибка при присоединении к альянсу.'));
         }
     }

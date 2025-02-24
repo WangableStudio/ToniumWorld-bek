@@ -20,7 +20,6 @@ class UserController {
                 return next(ApiError.badRequest('Доступ запрещен.'));
             }
 
-            // Поиск или создание пользователя
             const [user, created] = await User.findOrCreate({
                 where: { address },
                 include: [
@@ -35,7 +34,7 @@ class UserController {
                     id: uuid.v4().replace(/-/g, ''),
                     name: name || null,
                     tg_id: tg_id || null,
-                    role: role || null
+                    role: role || 'user'
                 }
             });
 

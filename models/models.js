@@ -248,7 +248,7 @@ const Alliance = sequelize.define('alliance', {
         allowNull: true
     },
     members: {
-        type: DataTypes.ARRAY(DataTypes.BIGINT),
+        type: DataTypes.JSONB,
         defaultValue: [],
         allowNull: false
     },
